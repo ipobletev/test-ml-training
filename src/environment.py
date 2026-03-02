@@ -103,7 +103,7 @@ class Car:
 
 class Environment:
     TRACKS = {
-        "Profesional": {
+        "Professional": {
             "points": [(100, 100), (450, 80), (850, 120), (920, 350), (850, 580), (500, 620), (120, 580), (80, 350)],
             "width": 80, "start": (100, 100, 100)
         },
@@ -111,13 +111,13 @@ class Environment:
             "points": [(200, 200), (800, 200), (800, 500), (200, 500)],
             "width": 100, "start": (200, 200, 90)
         },
-        "Laberinto": {
+        "Labyrinth": {
             "points": [(100, 100), (900, 100), (900, 600), (500, 600), (500, 300), (100, 300)],
             "width": 70, "start": (100, 100, 90)
         }
     }
 
-    def __init__(self, track_name="Profesional", render_mode=True):
+    def __init__(self, track_name="Professional", render_mode=True):
         pygame.init()
         self.width, self.height = 1000, 700
         self.track_name = track_name
@@ -181,7 +181,7 @@ class Environment:
             
         return states, rewards, all_done
 
-    def render(self, episode, total_reward, epsilon, output_active, training_enabled):
+    def render(self, episode, total_reward, epsilon, output_active, training_enabled, session_duration=0):
         if not self.render_mode: return
         self.screen.fill((34, 139, 34))
         asphalt = self.track_surface.copy()
@@ -203,14 +203,20 @@ class Environment:
                     pygame.draw.line(self.screen, (255, 255, 0), (car.x, car.y), (rx, ry), 1)
 
         train_status = "ON" if training_enabled else "OFF"
-        self._draw_badge(f"Ep: {episode} | Vivos: {alive_count}/{len(self.cars)} | Eps: {epsilon:.2f} | Entrenamiento: {train_status}", (20, 20))
+        # Calculate time string
+        mins = int(session_duration // 60)
+        secs = int(session_duration % 60)
+        time_str = f"{mins:02d}:{secs:02d}"
+        
+        status_text = f"Ep: {episode} | Alive: {alive_count}/{len(self.cars)} | Eps: {epsilon:.2f} | Training: {train_status} | Time: {time_str}"
+        self._draw_badge(status_text, (20, 20))
         
         # Output Toggle Button
         out_color = (0, 150, 255) if output_active else (100, 100, 110)
-        out_text = f"Generar Output: {'ON' if output_active else 'OFF'}"
+        out_text = f"Generate Output: {'ON' if output_active else 'OFF'}"
         self.out_toggle_rect = self._draw_button(out_text, (20, self.height - 70), out_color, width=280)
         
-        self.btn_rect = self._draw_button("Finalizar y Salir", (self.width - 250, self.height - 70), (150, 30, 30), width=230)
+        self.btn_rect = self._draw_button("Finish and Exit", (self.width - 250, self.height - 70), (150, 30, 30), width=230)
         pygame.display.flip()
 
     def _draw_badge(self, text, pos):
@@ -235,14 +241,14 @@ class Environment:
         root.withdraw()
         file_path = filedialog.askopenfilename(
             initialdir=os.path.join(os.getcwd(), ".output"),
-            title="Seleccionar archivo de pesos",
-            filetypes=(("Archivos PyTorch", "*.pth"), ("Todos los archivos", "*.*"))
+            title="Select weights file",
+            filetypes=(("PyTorch Files", "*.pth"), ("All Files", "*.*"))
         )
         root.destroy()
         return file_path
 
     def show_start_menu(self):
-        selected_track = "Profesional"
+        selected_track = "Professional"
         selected_model = None
         training_enabled = True
         stuck_detection = True
@@ -252,12 +258,12 @@ class Environment:
         
         while running:
             self.screen.fill((25, 25, 30))
-            title = self.title_font.render("Auto RL - Configuración Inicial", True, (255, 255, 255))
+            title = self.title_font.render("Auto RL - Initial Configuration", True, (255, 255, 255))
             self.screen.blit(title, (self.width//2 - title.get_width()//2, 40))
             
             # Scenario Selection
             y_off = 100
-            self.screen.blit(self.font.render("1. Seleccionar Pista:", True, (200, 200, 200)), (100, y_off))
+            self.screen.blit(self.font.render("1. Select Track:", True, (200, 200, 200)), (100, y_off))
             track_btns = {}
             for i, t_name in enumerate(self.TRACKS.keys()):
                 color = (50, 100, 200) if selected_track == t_name else (60, 60, 70)
@@ -265,7 +271,7 @@ class Environment:
 
             # Car Quantity
             y_off = 210
-            self.screen.blit(self.font.render("2. Cantidad de Autos:", True, (200, 200, 200)), (100, y_off))
+            self.screen.blit(self.font.render("2. Number of Cars:", True, (200, 200, 200)), (100, y_off))
             
             # Helper to draw smaller counter buttons
             minus_btn = self._draw_button("-", (100, y_off + 35), (150, 50, 50), width=60)
@@ -287,30 +293,30 @@ class Environment:
 
             # Model Selection
             y_off = 320
-            self.screen.blit(self.font.render("3. Cargar Inteligencia:", True, (200, 200, 200)), (100, y_off))
+            self.screen.blit(self.font.render("3. Load Intelligence:", True, (200, 200, 200)), (100, y_off))
             new_btn_color = (100, 100, 110) if selected_model is None else (60, 60, 70)
-            new_btn = self._draw_button("Nuevo Entrenamiento", (100, y_off + 35), new_btn_color, width=280)
+            new_btn = self._draw_button("New Training", (100, y_off + 35), new_btn_color, width=280)
             load_btn_color = (200, 150, 50) if selected_model is not None else (60, 60, 70)
-            load_btn = self._draw_button("Cargar Modelo (.pth)...", (400, y_off + 35), load_btn_color, width=280)
+            load_btn = self._draw_button("Load Model (.pth)...", (400, y_off + 35), load_btn_color, width=280)
             if selected_model:
                 model_name = os.path.basename(selected_model)
-                self.screen.blit(self.font.render(f"Seleccionado: {model_name}", True, (0, 255, 150)), (400, y_off + 95))
+                self.screen.blit(self.font.render(f"Selected: {model_name}", True, (0, 255, 150)), (400, y_off + 95))
 
             # Toggles
             y_off = 450
-            self.screen.blit(self.font.render("4. Opciones de Simulación:", True, (200, 200, 200)), (100, y_off))
+            self.screen.blit(self.font.render("4. Simulation Options:", True, (200, 200, 200)), (100, y_off))
             
             # Training Toggle
             train_color = (40, 180, 100) if training_enabled else (150, 50, 50)
-            train_text = f"Aprendizaje: {'ON' if training_enabled else 'OFF'}"
+            train_text = f"Learning: {'ON' if training_enabled else 'OFF'}"
             train_btn = self._draw_button(train_text, (100, y_off + 35), train_color, width=330)
             
             # Stuck Toggle
             stuck_color = (200, 100, 40) if stuck_detection else (60, 60, 70)
-            stuck_text = f"Estancamiento: {'ON' if stuck_detection else 'OFF'}"
+            stuck_text = f"Stagnation: {'ON' if stuck_detection else 'OFF'}"
             stuck_btn = self._draw_button(stuck_text, (450, y_off + 35), stuck_color, width=330)
 
-            start_btn = self._draw_button("¡EMPEZAR!", (self.width - 300, self.height - 90), (40, 180, 100), width=250)
+            start_btn = self._draw_button("START!", (self.width - 300, self.height - 90), (40, 180, 100), width=250)
             
             pygame.display.flip()
             for event in pygame.event.get():
