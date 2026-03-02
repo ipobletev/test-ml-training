@@ -8,7 +8,7 @@ from model import Agent
 
 def save_outputs(episode_history, model_info, track_name, base_model=None):
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_dir = os.path.join("output", f"{timestamp}")
+    output_dir = os.path.join(".output", f"{timestamp}")
     
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)

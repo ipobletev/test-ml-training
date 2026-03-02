@@ -234,7 +234,7 @@ class Environment:
         root = tk.Tk()
         root.withdraw()
         file_path = filedialog.askopenfilename(
-            initialdir=os.path.join(os.getcwd(), "output"),
+            initialdir=os.path.join(os.getcwd(), ".output"),
             title="Seleccionar archivo de pesos",
             filetypes=(("Archivos PyTorch", "*.pth"), ("Todos los archivos", "*.*"))
         )
